@@ -21,6 +21,35 @@ def main():
     dai_eth_price = get_asset_price(config["networks"][network.show_active()]["dai_eth_price_feed"])
     # Multiply by 0.95 as a buffer, so it's not too exact
     amount_dai_to_borrow = (1/dai_eth_price) * (borrowable_eth * 0.95)
+    print(f"We are going to borrow {amount_dai_to_borrow} DAI")
+    # Now we will borrow
+    dai_address = config["networks"][network.show_active()]["dai_token"]
+    borrow_tx = lending_pool.borrow(
+        dai_address,
+        Web3.toWei(amount_dai_to_borrow, "ether"),
+        1,
+        0,
+        account.address,
+        {"from": account}
+    )
+    borrow_tx.wait(1)
+    print("We borrowed some DAI!")
+    get_borrowable_data(lending_pool, account)
+    repay_all(amount, lending_pool, account)
+    print("We just depsited, borrowed and repayed on AAVE")
+
+def repay_all(amount, lending_pool, account):
+    approve_erc20(Web3.toWei(amount, "ether"), lending_pool, config["networks"][network.show_active()]["dai_token"], account)
+    repay_tx = lending_pool.repay(
+        config["networks"][network.show_active()]["dai_token"],
+        amount,
+        1,
+        account.address,
+        {"from": account}
+    )
+    repay_tx.wait(1)
+    print("Repayeedd")
+
 
 def get_asset_price(price_feed_address):
     dai_eth_price_feed = interface.AggregatorV3Interface(price_feed_address)
